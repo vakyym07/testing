@@ -1,33 +1,32 @@
-﻿using FluentAssertions;
+﻿using System.Collections.Generic;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace HomeExercises
 {
 	public class ObjectComparison
 	{
-		[Test]
-		[Description("Проверка текущего царя")]
-		[Category("ToRefactor")]
-		public void CheckCurrentTsar()
-		{
-			var actualTsar = TsarRegistry.GetCurrentTsar();
+        [Test]
+	    [Description("Проверка текущего царя")]
+	    [Category("ToRefactor")]
+	    public void CheckCurrentTsar()
+	    {
+	        var actualTsar = TsarRegistry.GetCurrentTsar();
 
-			var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
-				new Person("Vasili III of Russia", 28, 170, 60, null));
+	        var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
+	            new Person("Vasili III of Russia", 28, 170, 60, null));
 
-			// Перепишите код на использование Fluent Assertions.
-			Assert.AreEqual(actualTsar.Name, expectedTsar.Name);
-			Assert.AreEqual(actualTsar.Age, expectedTsar.Age);
-			Assert.AreEqual(actualTsar.Height, expectedTsar.Height);
-			Assert.AreEqual(actualTsar.Weight, expectedTsar.Weight);
+	        // Перепишите код на использование Fluent Assertions.
+	        var chekingField = new List<string>() {"Name", "Age", "Height", "Weight"};
+	        foreach (var field in chekingField)
+	        {
+	            var fld = typeof(Person).GetField(field);
+	            fld.GetValue(actualTsar).Should().Be(fld.GetValue(expectedTsar));
+	            fld.GetValue(actualTsar.Parent).Should().Be(fld.GetValue(expectedTsar.Parent));
+	        }
+	    }
 
-			Assert.AreEqual(expectedTsar.Parent.Name, actualTsar.Parent.Name);
-			Assert.AreEqual(expectedTsar.Parent.Age, actualTsar.Parent.Age);
-			Assert.AreEqual(expectedTsar.Parent.Height, actualTsar.Parent.Height);
-			Assert.AreEqual(expectedTsar.Parent.Parent, actualTsar.Parent.Parent);
-		}
-
-		[Test]
+	    [Test]
 		[Description("Альтернативное решение. Какие у него недостатки?")]
 		public void CheckCurrentTsar_WithCustomEquality()
 		{
@@ -35,8 +34,14 @@ namespace HomeExercises
 			var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
 			new Person("Vasili III of Russia", 28, 170, 60, null));
 
-			// Какие недостатки у такого подхода? 
-			Assert.True(AreEqual(actualTsar, expectedTsar));
+            // Какие недостатки у такого подхода? 
+            // Недостатки этого подхода заключаются в том, что при добавлении новых свойств в 
+            // класс Person возможна ситуация, когда мы захотим сравнивать объкты по новым свойствам.
+            // Для этого придётся добавлять в метод AreEqual новые строки. 
+            // Если сравниваемых полей достаточно много, метод раздуется, станет нечитаемым. 
+            // 
+            // Возможно, если родителей довольно много, из-за рекурсии можем получить StackOverflowException
+            Assert.True(AreEqual(actualTsar, expectedTsar));
 
 		}
 
