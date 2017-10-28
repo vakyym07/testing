@@ -3,121 +3,43 @@ using System.Text.RegularExpressions;
 using FluentAssertions;
 using FluentAssertions.Equivalency;
 using NUnit.Framework;
+using NUnit.Framework.Internal.Filters;
 
 namespace HomeExercises
 {
     public class NumberValidatorTests
     {
-        [Test]
-        public void NumberValidatorConstructor_Should_ThrowArgumenException_When_PrecisionLessThanZero()
+        [TestCase(-1, 2, true, TestName = "throw ArgumentExceprion when precision less than zero")]
+        [TestCase(0, 2, true, TestName = "throw ArgumentExceprion when precision equal zero")]
+        [TestCase(1, -1, true, TestName = "throw ArgumentExceprion when scale less than zero")]
+        [TestCase(1, 2, true, TestName = "throw ArgumentExceprion when scale greater than precision")]
+        [TestCase(2, 2, true, TestName = "throw ArgumentExceprion when scale equal precision")]
+        public void NumberVilidatorConstructor_Should(int precison, int scale, bool onlyPositive)
         {
-            Action act = () => new NumberValidator(-1, 2, true);
-            act.ShouldThrow<ArgumentException>("precision = -1, scale = 2")
-                .WithMessage("precision must be a positive number");
+            Action acttion = () => new NumberValidator(precison, scale, onlyPositive);
+            acttion.ShouldThrow<ArgumentException>($"precison={precison} scale={scale}");
         }
 
-        [Test]
-        public void NumberValidatorConstructor_Should_ThrowArgumenException_When_PrecisionEqualZero()
+        [TestCase(null, 17, 2, true, TestName = "when value is null")]
+        [TestCase("", 17, 2, true, TestName = "when value is empty")]
+        [TestCase("12345", 2, 0, true, TestName = "when int part greater than precision")]
+        [TestCase("00.00", 3, 2, true, TestName = "when int part plus frac part without sign greater than precision")]
+        [TestCase("+0.00", 3, 2, true, TestName = "when int part plus frac part with sign greater than precision")]
+        [TestCase("-1.23", 4, 2, true, TestName = "when value is valid negative number and flag onlyPositive is true")]
+        [TestCase("0.000", 17, 2, true, TestName = "when frac part greater than scale")]
+        [TestCase("a.bc", 3, 2, true, TestName = "when value contains forbidden symbol")]
+        public void IsValidNumber_Should_BeFalse(string value, int precison, int scale, bool onlyPositive)
         {
-            Action act = () => new NumberValidator(0, 2, true);
-            act.ShouldThrow<ArgumentException>("precision = 0, scale = 2")
-                .WithMessage("precision must be a positive number");
+            new NumberValidator(precison, scale, onlyPositive).IsValidNumber(value).Should().BeFalse($"value={value}");
         }
 
-        [Test]
-        public void NumberValidatorConstructor_Should_ThrowArgumenException_When_ScaleLessThanZero()
+        [TestCase("0,0", 17, 2, true, TestName = "when value is valid float number with comma")]
+        [TestCase("0.0", 17, 2, true, TestName = "when value is valid float number with dot")]
+        [TestCase("0", 17, 2, true, TestName = "when value is valid integer")]
+        [TestCase("+1.23", 4, 2, true, TestName = "when int part plus frac part with sign not greater than precision")]
+        public void isValidNumber_Should_BeTrue(string value, int precison, int scale, bool onlyPositive)
         {
-            Action act = () => new NumberValidator(1, -1, true);
-            act.ShouldThrow<ArgumentException>("precision = 1, scale = -1")
-                .WithMessage("precision must be a non-negative number less or equal than precision");
-        }
-
-        [Test]
-        public void NumberValidatorConstructor_Should_ThrowArgumenException_When_ScaleGreaterThanPrecision()
-        {
-            Action act = () => new NumberValidator(1, 2, true);
-            act.ShouldThrow<ArgumentException>("precision = 1, scale = 2")
-                .WithMessage("precision must be a non-negative number less or equal than precision");
-        }
-
-        [Test]
-        public void NumberValidatorConstructor_Should_ThrowArgumenException_When_ScaleEqualPrecision()
-        {
-            Action act = () => new NumberValidator(2, 2, true);
-            act.ShouldThrow<ArgumentException>("precision = 2, scale = 2")
-                .WithMessage("precision must be a non-negative number less or equal than precision");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnFalse_When_ValueIsNull()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber(null).Should().BeFalse("value is null");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_RetrunFalse_When_ValueIsEmptyString()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber(string.Empty).Should().BeFalse("value is empty");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnTrue_When_ValueIsValidFloatNumberWithComma()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber("0,0").Should().BeTrue("value = 0,0");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnTrue_When_ValueIsValidFloatNumberWithDot()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber("0.0").Should().BeTrue("value = 0.0");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnTrue_When_ValueIsValidIntegerNumber()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber("0").Should().BeTrue("value = 0");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_RetrunFalse_When_IntPartGreaterThanPrecision()
-        {
-            new NumberValidator(2, 0, true).IsValidNumber("12345").Should().BeFalse("value = 12345");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnFalse_When_IntPartPlusFracPartWithOutSignGreterThanPrecision()
-        {
-            new NumberValidator(3, 2, true).IsValidNumber("00.00").Should().BeFalse("value = 00.00");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnFalse_When_IntPartPlusFracPartWithSignGreterThanPrecision()
-        {
-            new NumberValidator(3, 2, true).IsValidNumber("+0.00").Should().BeFalse("value = +0.00");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_RetrunTrue_When_IntPartPlusFracPartWithSignNotGreterThanPrecision()
-        {
-            new NumberValidator(4, 2, true).IsValidNumber("+1.23").Should().BeTrue("value = +1.23");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnFalse_WhenValueIsValidNegativeNumberAndFlagOnlyPositiveIsTrue()
-        {
-            new NumberValidator(4, 2, true).IsValidNumber("-1.23").Should().BeFalse("value = -1.23");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_ReturnFalse_WhenFracPartGreaterThanScale()
-        {
-            new NumberValidator(17, 2, true).IsValidNumber("0.000").Should().BeFalse("value = 0.000");
-        }
-
-        [Test]
-        public void IsValidNumber_Should_RetrunFalse_When_ValueContainsForbiddenSymbol()
-        {
-            new NumberValidator(3, 2, true).IsValidNumber("a.sd").Should().BeFalse("value = a.sd");
+            new NumberValidator(precison, scale, onlyPositive).IsValidNumber(value).Should().BeTrue($"value={value}");
         }
 
         public class NumberValidator

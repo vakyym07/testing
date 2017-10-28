@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using FluentAssertions;
+using FluentAssertions.Equivalency;
 using NUnit.Framework;
 
 namespace HomeExercises
@@ -12,13 +14,12 @@ namespace HomeExercises
         public void CheckCurrentTsar()
         {
             var actualTsar = TsarRegistry.GetCurrentTsar();
-
             var expectedTsar = new Person("Ivan IV The Terrible", 54, 170, 70,
                 new Person("Vasili III of Russia", 28, 170, 60, null));
 
             // Перепишите код на использование Fluent Assertions.
-            actualTsar.ShouldBeEquivalentTo(expectedTsar, options =>
-                options.Excluding(o => o.SelectedMemberPath.EndsWith("Id")));
+            actualTsar.ShouldBeEquivalentTo(expectedTsar, options => options
+                .Excluding(o => o.SelectedMemberInfo.DeclaringType.Name == "Person" && o.SelectedMemberPath.EndsWith("Id")));
         }
 
         [Test]
